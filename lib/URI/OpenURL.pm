@@ -16,7 +16,7 @@ The description of a referenced resource, and the descriptions of the associated
 
 The ContextObject may contain up to six Entities. One of these, the Referent, conveys information about the referenced item. It must always be included in a ContextObject. The other five entities - ReferringEntity, Requester, Resolver, ServiceType and Referrer - hold information about the context of the reference and are optional.
 
-= OpenURL
+=head1 OpenURL
 
 http://library.caltech.edu/openurl/
 
@@ -89,7 +89,7 @@ There are currently two formats for ContextObjects defined in the OpenURL Framew
 
 use vars qw( $VERSION );
 
-$VERSION = '0.4';
+$VERSION = '0.4.1';
 
 use strict;
 use URI::Escape;
@@ -119,12 +119,44 @@ sub _init {
 		ctx_ver => 'Z39.88-2004',
 		ctx_enc => 'info:ofi/enc:UTF-8',
 #		ctx_id => '1', # TODO Check whether ctx_id is significant for URIs
-		ctx_tim => strftime("%Y-%m-%dT%H:%M:%STZD",gmtime(time)),
+#		ctx_tim => strftime("%Y-%m-%dT%H:%M:%STZD",gmtime(time)),
 		url_ver => 'Z39.88-2004',
-		url_tim => strftime("%Y-%m-%dT%H:%M:%STZD",gmtime(time)),
+#		url_tim => strftime("%Y-%m-%dT%H:%M:%STZD",gmtime(time)),
 		url_ctx_fmt => 'info:ofi/fmt:kev:mtx:ctx',
 	) unless $self->query_form();
 	$self;
+}
+
+=pod
+
+=item $ts = $uri->init_timestamps([ctx_timestamp, [url_timestamp]])
+
+Add ContextObject and URL timestamps, returns the old timestamp(s) or undef on none.
+
+=cut
+
+sub init_timestamps {
+	my $self = shift;
+	my $ctx_timestamp = shift ||
+		strftime("%Y-%m-%dT%H:%M:%STZD",gmtime(time));
+	my $url_timestamp = shift || $ctx_timestamp;
+	my @query = $self->query_form;
+	my @old;
+	for(my $i = 0; $i < @query;) {
+		if( $query[$i] eq 'ctx_tim' ) {
+			($_,$old[0]) = splice(@query,$i,2);
+		} elsif( $query[$i] eq 'url_tim' ) {
+			($_,$old[1]) = splice(@query,$i,2);
+		} else {
+			$i+=2;
+		}
+	}
+	$self->query_form(
+		@query,
+		'ctx_tim', $ctx_timestamp,
+		'url_tim', $url_timestamp,
+	);
+	wantarray ? @old : ($old[0]||$old[1]);
 }
 
 =pod
@@ -252,6 +284,14 @@ Return a list of values given for an entity descriptor (id, ref, dat, val_fmt, r
 =item $ref_fmt = $uri->referent->ref_fmt()
 
 Return the respective descriptor using a method interface. An entity may contain 0 or more ids, and optionally a by-reference URI, private data, by-value format and by-reference format.
+
+=head1 CHANGES
+
+0.4.1
+	- Timestamps no longer included in default initialization
+	- Added method "init_timestamps" to add timestamps
+0.4
+	- Initial release
 
 =head1 COPYRIGHT
 

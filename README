@@ -28,7 +28,10 @@ exclusively, on components from the San Antonio Level 1 Community Profile
 
 This module requires URI and URI::Escape. Installation:
 
-	perl Makefile.PL make make test make install
+	perl Makefile.PL
+	make
+	make test
+	make install
 
 (n.b. as OpenURLs contain a timestamp the tests are really example cases rather
 than actually checking it's working correctly)

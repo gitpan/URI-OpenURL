@@ -1,6 +1,8 @@
-print "1..1\n";
-
 use strict;
+use Test;
+
+BEGIN { plan tests => 3 }
+
 use URI::OpenURL;
 
 my $test = <<EOF;
@@ -10,20 +12,8 @@ EOF
 # Construct an OpenURL
 my $uri = URI::OpenURL->new($test);
 
-my @pairs = $uri->referent; # Shorthand for $uri->referent->descriptors()
-my $id = $uri->referent->id;
-warn \$id, "\n";
-warn "\n";
-for(my $i = 0; $i < @pairs; $i+=2) {
-	warn $pairs[$i] . " => ".$pairs[$i+1] . "\n";
-}
-
-if( $uri->referent->val_fmt eq 'info:ofi/fmt:kev:mtx:journal' ) {
-	@pairs = $uri->referent->metadata();
-	warn "\n";
-	for(my $i = 0; $i < @pairs; $i+=2) {
-		warn $pairs[$i] . " => ".$pairs[$i+1] . "\n";
-	}
-}
-
-print "ok 1\n";
+my @ids = $uri->referent->id;
+ok(scalar(@ids),2);
+ok($ids[1],'info:doi/10.1045/july99-caplan');
+my %md = $uri->referent->metadata;
+ok($md{'genre'},'article');
