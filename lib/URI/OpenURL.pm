@@ -76,6 +76,10 @@ There are currently two formats for ContextObjects defined in the OpenURL Framew
 		my %md = $uri->referent->metadata();
 		print ($md{genre} || 'Unknown journal article genre'), "\n";
 	}
+	
+	if( $uri->referent->val_fmt() eq 'info:ofi/fmt:kev:mtx:journal' ) {
+		print "The referent is a journal article.\n";
+	}
 
 =head1 METHODS
 
@@ -85,7 +89,7 @@ There are currently two formats for ContextObjects defined in the OpenURL Framew
 
 use vars qw( $VERSION );
 
-$VERSION = '0.3';
+$VERSION = '0.4';
 
 use strict;
 use URI::Escape;
@@ -114,7 +118,7 @@ sub _init {
 	$self->query_form(
 		ctx_ver => 'Z39.88-2004',
 		ctx_enc => 'info:ofi/enc:UTF-8',
-		ctx_id => '1', # TODO Check whether ctx_id is significant for URIs
+#		ctx_id => '1', # TODO Check whether ctx_id is significant for URIs
 		ctx_tim => strftime("%Y-%m-%dT%H:%M:%STZD",gmtime(time)),
 		url_ver => 'Z39.88-2004',
 		url_tim => strftime("%Y-%m-%dT%H:%M:%STZD",gmtime(time)),
@@ -233,13 +237,21 @@ Returns by-value metadata as a list of key-value pairs for the current entity (r
 
 Optionally, if you wish to add metadata that does not use one of the standard schemas (journal, book etc.) then you can add them using metadata.
 
-=head1 ABOUT
+=item @vals = $uri->referent->descriptor('id')
 
-This module should be considered BETA, not least because the OpenURL standard is (as of 2004-05-12) "submitted to NISO for Ballot". However it is not intended to change the interface.
+Return a list of values given for an entity descriptor (id, ref, dat, val_fmt, ref_fmt).
 
-=head1 TODO
+=item $dat = $uri->referent->dat()
 
-"Easy" access to descriptors and metadata, e.g. $uri->referent->descriptor->id().
+=item @ids = $uri->referent->id()
+
+=item $ref = $uri->referent->ref()
+
+=item $val_fmt = $uri->referent->val_fmt()
+
+=item $ref_fmt = $uri->referent->ref_fmt()
+
+Return the respective descriptor using a method interface. An entity may contain 0 or more ids, and optionally a by-reference URI, private data, by-value format and by-reference format.
 
 =head1 COPYRIGHT
 
@@ -305,17 +317,6 @@ sub _addkevs {
 	bless $self, 'URI::OpenURL'; # Should catch some broken user code
 }
 
-sub descriptor {
-	my ($self,$key) = @_;
-	my @KEVS = $self->query_form();
-	my @VALS;
-	my $entity = $self->_entity();
-	for(my $i = 0; $i < @KEVS; $i+=2) {
-		push @VALS, $KEVS[$i+1] if( $KEVS[$i] eq "${entity}_${key}" );
-	}
-	@VALS;
-}
-
 sub dublinCore {
 	shift->_addkevs('info:ofi/fmt:kev:mtx:dc',@_);
 }
@@ -355,6 +356,23 @@ sub descriptors {
 	}
 	return @md;
 }
+
+sub descriptor {
+	my ($self,$key) = @_;
+	my @KEVS = $self->query_form();
+	my @VALS;
+	my $entity = $self->_entity();
+	for(my $i = 0; $i < @KEVS; $i+=2) {
+		push @VALS, $KEVS[$i+1] if( $KEVS[$i] eq "${entity}_${key}" );
+	}
+	wantarray ? @VALS : $VALS[0];
+}
+
+sub dat { shift->descriptor('dat') }
+sub id { shift->descriptor('id') }
+sub ref { shift->descriptor('ref') }
+sub ref_fmt { shift->descriptor('ref_fmt') }
+sub val_fmt { shift->descriptor('val_fmt') }
 
 # By-value metadata (things with '.' in)
 sub metadata {

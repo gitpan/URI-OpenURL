@@ -7,5 +7,4 @@ t/empty.t
 t/journal.t
 t/parse.t
 t/referent.t
-t/uri.t
 META.yml                                 Module meta-data (added by MakeMaker)
