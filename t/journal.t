@@ -1,10 +1,10 @@
 print "1..1\n";
 
 use strict;
-use URI::openurl;
+use URI::OpenURL;
 
 # Construct an OpenURL
-my $uri = URI->new("openurl://citebase.eprints.org/cgi-bin/openurl"
+my $uri = URI::OpenURL->new("http://openurl.ac.uk/"
 	)->referrer(id => 'info:sid/dlib.org:dlib',
 	)->requester(id => 'mailto:tdb01r@ecs.soton.ac.uk',
 	)->resolver(id => 'http://citebase.eprints.org/',

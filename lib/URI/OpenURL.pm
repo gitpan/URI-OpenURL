@@ -65,7 +65,7 @@ There are currently two formats for ContextObjects defined in the OpenURL Framew
 		)->as_string();
 
 	# Parsing (wrappers for $uri->query_form())
-	my $uri = URI::OpenURL->new('http://a.openurl/?url_ver=Z39.88-2004&...');
+	my $uri = URI::OpenURL->new('http://a.OpenURL/?url_ver=Z39.88-2004&...');
 	my @referent = $uri->referent->metadata();
 	print join(',',@referent), "\n";
 	# This could lose data if there is more than one id
@@ -85,22 +85,23 @@ There are currently two formats for ContextObjects defined in the OpenURL Framew
 
 use vars qw( $VERSION );
 
-$VERSION = '0.2';
+$VERSION = '0.3';
 
 use strict;
 use URI::Escape;
 use Carp;
 use POSIX qw/ strftime /;
 
+require URI;
 require URI::_server;
 use vars qw( @ISA );
-@ISA = qw( URI::http );
+@ISA = qw( URI::_server );
 
 =pod
 
-=item $uri = URI::openurl->new([$url])
+=item $uri = URI::OpenURL->new([$url])
 
-Create a new URI::openurl object and optionally initialize with $url. If $url does not contain a query component (...?key=value) the object will be initialized to a valid contextobject, but without any entities.
+Create a new URI::OpenURL object and optionally initialize with $url. If $url does not contain a query component (...?key=value) the object will be initialized to a valid contextobject, but without any entities.
 
 =cut
 
@@ -131,7 +132,7 @@ Every ContextObject must have a Referent, the referenced resource for which the 
 =cut
 
 sub referent {
-	my $self = bless shift, 'OpenURL::referent';
+	my $self = bless shift, 'URI::OpenURL::referent';
 	return $self->descriptors() if wantarray;
 	$self->_addattr(@_);
 }
@@ -145,7 +146,7 @@ The ReferringEntity is the Entity that references the Referent. It is optional i
 =cut
 
 sub referringEntity {
-	my $self = bless shift, 'OpenURL::referringEntity';
+	my $self = bless shift, 'URI::OpenURL::referringEntity';
 	return $self->descriptors() if wantarray;
 	$self->_addattr(@_);
 }
@@ -159,7 +160,7 @@ The Requester is the Entity that requests services pertaining to the Referent. I
 =cut
 
 sub requester {
-	my $self = bless shift, 'OpenURL::requester';
+	my $self = bless shift, 'URI::OpenURL::requester';
 	return $self->descriptors() if wantarray;
 	$self->_addattr(@_);
 }
@@ -171,7 +172,7 @@ The ServiceType is the Entity that defines the type of service requested. It is 
 =cut
 
 sub serviceType {
-	my $self = bless shift, 'OpenURL::serviceType';
+	my $self = bless shift, 'URI::OpenURL::serviceType';
 	return $self->descriptors() if wantarray;
 	$self->_addattr(@_);
 }
@@ -185,7 +186,7 @@ The Resolver is the Entity at which a request for services is targeted. It is op
 =cut
 
 sub resolver {
-	my $self = bless shift, 'OpenURL::resolver';
+	my $self = bless shift, 'URI::OpenURL::resolver';
 	return $self->descriptors() if wantarray;
 	$self->_addattr(@_);
 }
@@ -199,7 +200,7 @@ The Referrer is the Entity that generated the ContextObject. It is optional in t
 =cut
 
 sub referrer {
-	my $self = bless shift, 'OpenURL::referrer';
+	my $self = bless shift, 'URI::OpenURL::referrer';
 	return $self->descriptors() if wantarray;
 	$self->_addattr(@_);
 }
@@ -240,14 +241,6 @@ This module should be considered BETA, not least because the OpenURL standard is
 
 "Easy" access to descriptors and metadata, e.g. $uri->referent->descriptor->id().
 
-=head1 NOTES
-
-This module works a little differently to the other URI modules in that structured data is added by calling methods that return an object. Whenever an entity method is called the object gets casted into a class encapsulating that entity, allowing further method calls to add metadata. The net result of this is that the URI object will change type as you add data to the object.
-
-The reason for doing this is URI only allows one value to be stored (the URI string), so to keep the context of which entity the user is adding data to the only thing I could think of was to change the class. The downside of this is you can't use URI::openurl as a superclass.
-
-You will also notice that if you try creating an URI object with an OpenURL (which is actually http:) the http module will be called rather than openurl. You can either call openurl directly as given in the synopsis, or by changing 'http' to 'openurl', in which case URI will call the correct module.
-
 =head1 COPYRIGHT
 
 Quotes from the OpenURL implementation guidelines are from: http://library.caltech.edu/openurl/
@@ -266,7 +259,7 @@ University of Southampton, UK
 
 =cut
 
-package OpenURL::entity;
+package URI::OpenURL::entity;
 
 use vars qw(@ISA);
 @ISA = qw(URI::OpenURL);
@@ -309,7 +302,7 @@ sub _addkevs {
 		push @KEVS, $entity.'.'.$pairs[$i], ($pairs[$i+1]||'');
 	}
 	$self->query_form(@KEVS);
-	bless $self, 'URI::openurl'; # Should catch some broken user code
+	bless $self, 'URI::OpenURL'; # Should catch some broken user code
 }
 
 sub descriptor {
@@ -379,35 +372,35 @@ sub metadata {
 	return @md;
 }
 
-package OpenURL::referent;
+package URI::OpenURL::referent;
 
 use vars qw(@ISA);
-@ISA = qw(OpenURL::entity);
+@ISA = qw(URI::OpenURL::entity);
 
-package OpenURL::referringEntity;
-
-use vars qw(@ISA);
-@ISA = qw(OpenURL::entity);
-
-package OpenURL::requester;
+package URI::OpenURL::referringEntity;
 
 use vars qw(@ISA);
-@ISA = qw(OpenURL::entity);
+@ISA = qw(URI::OpenURL::entity);
 
-package OpenURL::serviceType;
-
-use vars qw(@ISA);
-@ISA = qw(OpenURL::entity);
-
-package OpenURL::resolver;
+package URI::OpenURL::requester;
 
 use vars qw(@ISA);
-@ISA = qw(OpenURL::entity);
+@ISA = qw(URI::OpenURL::entity);
 
-package OpenURL::referrer;
+package URI::OpenURL::serviceType;
 
 use vars qw(@ISA);
-@ISA = qw(OpenURL::entity);
+@ISA = qw(URI::OpenURL::entity);
+
+package URI::OpenURL::resolver;
+
+use vars qw(@ISA);
+@ISA = qw(URI::OpenURL::entity);
+
+package URI::OpenURL::referrer;
+
+use vars qw(@ISA);
+@ISA = qw(URI::OpenURL::entity);
 
 1;
 
