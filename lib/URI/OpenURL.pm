@@ -89,7 +89,7 @@ There are currently two formats for ContextObjects defined in the OpenURL Framew
 
 use vars qw( $VERSION );
 
-$VERSION = '0.4.2';
+$VERSION = '0.4.3';
 
 use strict;
 use URI::Escape;
@@ -163,6 +163,7 @@ sub new_from_hybrid
 			$self->referrer->id('info:sid/'.$KEVS[$i+1]);
 			splice(@KEVS,$i,2);
 		} elsif( $KEVS[$i] eq 'id' ) {
+			$KEVS[$i] = 'info:'.$KEVS[$i] if( $KEVS[$i] =~ /^doi|pmid/ );
 			$self->referent->id($KEVS[$i+1]);
 			splice(@KEVS,$i,2);
 		} elsif( $KEVS[$i] eq 'pid' ) {
@@ -232,7 +233,7 @@ sub as_hybrid
 	my @KEVS = $self->query_form;
 	# Add the referent
 	my @md = $self->referent->metadata();
-	# 'title' has been changed to 'jtitle'
+	# 'title' has been changed to 'jtitle' in 1.0
 	for(my $i = 0; $i < @md; $i+=2) {
 		$md[$i] = 'title' if($md[$i] eq 'jtitle');
 	}
@@ -241,6 +242,13 @@ sub as_hybrid
 	if( defined($self->referrer->id) ) {
 		push @KEVS,	sid => $self->referrer->id;
 		$KEVS[$#KEVS] =~ s/^info:(?:sid\/)?//;
+	}
+	# Add the referent's id (if its compatible with 0.1)
+	if( defined($self->referent->id) &&
+		$self->referent->id =~ /^info:(?:doi|pmid)|oai:|bibcode:/
+	) {
+		push @KEVS,	id => $self->referent->id;
+		$KEVS[$#KEVS] =~ s/^info://;
 	}
 	# Return a new URI (otherwise we pollute ourselves)
 	my $hybrid = new URI::OpenURL($self);
@@ -269,7 +277,26 @@ sub canonical
 	$uri;
 }
 
+=pod
+
+=item $str = $uri->dump()
+
+Return the OpenURL as a human-readable string (useful for debugging).
+
 =cut
+
+sub dump
+{
+	my $self = shift;
+	my $str = URI->new($self);
+	$str->query('');
+	$str .= "\n";
+	my @kevs = $self->query_form;
+	for(my $i = 0; $i < @kevs; $i+=2) {
+		$str .= $kevs[$i] . "=" . $kevs[$i+1] . "\n";
+	}
+	$str;
+}
 
 =pod
 
