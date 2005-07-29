@@ -89,7 +89,7 @@ There are currently two formats for ContextObjects defined in the OpenURL Framew
 
 use vars qw( $VERSION );
 
-$VERSION = '0.4.3';
+$VERSION = '0.4.4';
 
 use strict;
 use URI::Escape;
@@ -163,8 +163,11 @@ sub new_from_hybrid
 			$self->referrer->id('info:sid/'.$KEVS[$i+1]);
 			splice(@KEVS,$i,2);
 		} elsif( $KEVS[$i] eq 'id' ) {
-			$KEVS[$i] = 'info:'.$KEVS[$i] if( $KEVS[$i] =~ /^doi|pmid/ );
-			$self->referent->id($KEVS[$i+1]);
+			if( $KEVS[$i+1] =~ s/(^doi|pmid|bibcode):// ) {
+				$self->referent->id("info:$1/".$KEVS[$i+1]);
+			} else {
+				$self->referent->id($KEVS[$i+1]);
+			}
 			splice(@KEVS,$i,2);
 		} elsif( $KEVS[$i] eq 'pid' ) {
 			$self->referent->dat($KEVS[$i+1]);
@@ -239,16 +242,17 @@ sub as_hybrid
 	}
 	push @KEVS, @md;
 	# Add the referrer's id
-	if( defined($self->referrer->id) ) {
-		push @KEVS,	sid => $self->referrer->id;
-		$KEVS[$#KEVS] =~ s/^info:(?:sid\/)?//;
+	my $rfr_id = $self->referrer->id;
+	if( defined($rfr_id) && $rfr_id =~ s/^info:sid\/// ) {
+		push @KEVS,	sid => $rfr_id;
 	}
 	# Add the referent's id (if its compatible with 0.1)
-	if( defined($self->referent->id) &&
-		$self->referent->id =~ /^info:(?:doi|pmid)|oai:|bibcode:/
+	my $rft_id = $self->referent->id;
+	if( defined($rft_id) &&
+		($rft_id =~ s/^info:(doi|pmid|bibcode)\//$1:/ ||
+		 $rft_id =~ /^oai:/)
 	) {
-		push @KEVS,	id => $self->referent->id;
-		$KEVS[$#KEVS] =~ s/^info://;
+		push @KEVS,	id => $rft_id;
 	}
 	# Return a new URI (otherwise we pollute ourselves)
 	my $hybrid = new URI::OpenURL($self);
