@@ -89,7 +89,7 @@ There are currently two formats for ContextObjects defined in the OpenURL Framew
 
 use vars qw( $VERSION );
 
-$VERSION = '0.4.4';
+$VERSION = '0.4.6';
 
 use strict;
 use URI::Escape;
@@ -123,14 +123,8 @@ sub new {
 sub _init {
 	my $self = shift->SUPER::_init(@_);
 	$self->query_form(
-		ctx_ver => 'Z39.88-2004',
-		ctx_enc => 'info:ofi/enc:UTF-8',
-#		ctx_id => '1', # TODO Check whether ctx_id is significant for URIs
-#		ctx_tim => strftime("%Y-%m-%dT%H:%M:%STZD",gmtime(time)),
 		url_ver => 'Z39.88-2004',
-#		url_tim => strftime("%Y-%m-%dT%H:%M:%STZD",gmtime(time)),
-		url_ctx_fmt => 'info:ofi/fmt:kev:mtx:ctx',
-	) unless $self->query_form();
+	) unless $self->query();
 	$self;
 }
 
@@ -189,6 +183,53 @@ sub new_from_hybrid
 }
 
 =pod
+
+=item @qry = $uri->query_form([key, value, [key, value]])
+
+Equivalent to URI::query_form, but with support for UTF-8 encoding.
+
+=cut
+
+sub query_form
+{
+	my $self = shift;
+	my @new = @_;
+	if( 1 == @new ) {
+		my $n = $new[0];
+		if( ref($n) eq "ARRAY" ) {
+			@new = @$n;
+		} elsif( ref($n) eq "HASH" ) {
+			@new = %$n;
+		}
+	}
+	for (@new) {
+		utf8::encode($_);
+	}
+	map { utf8::decode($_); $_ } $self->SUPER::query_form(@new);
+}
+
+=pod
+
+=item $uri->init_ctxobj_version()
+
+Add ContextObject versioning.
+
+=cut
+
+sub init_ctxobj_version
+{
+	my $self = shift;
+	my %query = $self->query_form;
+	return if
+		defined($query{'ctx_ver'}) &&
+		$query{'ctx_ver'} eq 'Z39.88-2004';
+	$self->query_form(
+		$self->query_form,
+		ctx_ver => 'Z39.88-2004',
+		ctx_enc => 'info:ofi/enc:UTF-8',
+		url_ctx_fmt => 'info:ofi/fmt:kev:mtx:ctx',
+	);
+}
 
 =pod
 
@@ -269,6 +310,7 @@ Return a canonical OpenURL by removing anything that isn't part of the version 1
 sub canonical
 {
 	my $uri = shift->SUPER::canonical();
+	$uri = bless $uri, "URI::OpenURL";
 	my @KEVS = $uri->query_form();
 	for(my $i = 0; $i < @KEVS; ) {
 		if( $KEVS[$i] !~ /^ctx_ver|ctx_enc|ctx_id|ctx_tim|url_ver|url_tim|url_ctx_fmt|(?:(?:rft|rfe|svc|req|res|rfr)[_\.].+)$/ ) {
@@ -430,6 +472,11 @@ Return the respective descriptor using a method interface. An entity may contain
 
 =head1 CHANGES
 
+	0.4.6
+		- Removed ContextObject versioning from default
+		  constructor
+	0.4.5
+		- Support for URL utf-8 encoding
 	0.4.2
 		- Added methods for parsing/writing hybrid OpenURLs
 	0.4.1

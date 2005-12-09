@@ -1,6 +1,7 @@
 MANIFEST
 Makefile.PL
 README
+CHANGELOG
 lib/URI/OpenURL.pm
 t/custom.t
 t/empty.t
